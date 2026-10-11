@@ -4,6 +4,7 @@ require 'sketchup.rb'
 require_relative 'config_manager'
 require_relative 'html_generator'
 require_relative 'counter'
+require_relative 'legacy'
 
 module SkpCm
   module BoQCounter
@@ -13,26 +14,12 @@ module SkpCm
       !plugins_dir.nil? && File.exist?(File.join(plugins_dir, 'classmat_suite.rb'))
     end
 
-    def self.legacy_message
-      plugins_dir = Sketchup.find_support_file('Plugins')
-      <<~MSG
-        Classmat Suite (old version) is still installed.
-        BoQ Counter and Grid Dimension are now separate plugins.
-        Your BoQ settings and login have been copied to SKP CM BoQ Counter.
+    # Status for legacy_message, based on what is on disk after migration
+    def self.legacy_config_status
+      legacy = ConfigManager.legacy_config_path
+      return :none if legacy.nil? || !File.exist?(legacy)
 
-        Please close SketchUp and delete these items from:
-        #{plugins_dir}
-
-        - classmat_suite.rb
-        - classmat_config.json
-        - lib/boq/ (folder)
-        - lib/grid/ (folder)
-        - lib/core/config_manager.rb
-        - icons/boq_icon.png
-        - icons/grid_icon.png
-
-        Then restart SketchUp.
-      MSG
+      File.exist?(ConfigManager.config_file_path) ? :copied : :failed
     end
 
     unless file_loaded?(__FILE__)
@@ -49,7 +36,12 @@ module SkpCm
       toolbar.show
 
       if legacy_installed?
-        UI.start_timer(1, false) { UI.messagebox(legacy_message) }
+        message = legacy_message(Sketchup.find_support_file('Plugins'), legacy_config_status)
+        # Stop the timer first: a modal dialog inside a non-repeating timer makes it repeat (SketchUp API bug)
+        timer_id = UI.start_timer(1, false) do
+          UI.stop_timer(timer_id)
+          UI.messagebox(message)
+        end
       end
 
       file_loaded(__FILE__)
