@@ -22,5 +22,5 @@ SketchUp → Extensions → Extension Manager → Install Extension → เล�
 
 ## Development
 
-    ruby tests/tc_config_manager.rb   # test ConfigManager (ไม่ต้องใช้ SketchUp)
+    for t in tests/tc_*.rb; do ruby "$t"; done   # unit tests (ไม่ต้องใช้ SketchUp)
     ./build.sh                        # ได้ skp_cm_boq_counter_<VERSION>.rbz
