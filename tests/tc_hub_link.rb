@@ -24,7 +24,7 @@ end
 module FakeAuth
   class << self
     attr_accessor :logged_in, :username, :token, :api_base_url, :imports, :listeners, :shown,
-                  :import_reply, :relogin_reply
+                  :import_reply, :relogin_reply, :relogins, :broken
 
     def reset
       self.logged_in = false
@@ -36,6 +36,8 @@ module FakeAuth
       self.shown = false
       self.import_reply = [true, nil, 'old@b.c'] # [ok, error, username the Hub holds afterwards]
       self.relogin_reply = [true, nil]
+      self.relogins = 0
+      self.broken = false
     end
 
     def logged_in?
@@ -43,6 +45,7 @@ module FakeAuth
     end
 
     def on_change(&listener)
+      raise 'hub broke' if broken
       listeners << listener
       listener
     end
@@ -56,6 +59,7 @@ module FakeAuth
     end
 
     def relogin
+      self.relogins += 1
       yield(*relogin_reply)
     end
 
@@ -179,5 +183,36 @@ class TestHubLink < Minitest::Test
     FakeAuth.import_reply = [false, 'เชื่อมต่อ server ไม่ได้', nil]
     assert_equal :retry_later, migrate
     refute_nil CM.legacy_credentials
+  end
+
+  # SketchUp started offline: the report asks again when it opens
+  def test_refresh_reconnects_only_when_logged_in_without_token
+    result = nil
+    HL.refresh { |ok| result = ok }
+    assert_equal 0, FakeAuth.relogins, 'not logged in: nothing to do'
+    FakeAuth.logged_in = true
+    FakeAuth.token = 't'
+    HL.refresh { |ok| result = ok }
+    assert_equal 0, FakeAuth.relogins, 'online: nothing to do'
+    FakeAuth.token = nil
+    HL.refresh { |ok| result = ok }
+    assert_equal 1, FakeAuth.relogins
+    assert_equal true, result
+    no_hub
+    HL.refresh { |ok| result = ok }
+    assert_equal false, result
+  end
+
+  # the production report must still open when the Hub or the config misbehaves
+  def test_errors_from_hub_or_config_do_not_escape
+    FakeAuth.broken = true
+    assert_nil HL.watch { |_| }
+    original = CM.method(:legacy_credentials)
+    CM.define_singleton_method(:legacy_credentials) { raise Errno::EISDIR }
+    result = nil
+    HL.migrate_credentials { |r| result = r }
+    assert_equal :error, result
+  ensure
+    CM.define_singleton_method(:legacy_credentials, original) if original
   end
 end

@@ -132,8 +132,14 @@ module SkpCm
           end
         end
         
+        # Report opened: send the status (reconnect first when the Hub is logged in but offline)
         dlg.add_action_callback("auth_status") do |_dlg, _params|
-          push_auth_status(dlg)
+          begin
+            SkpCm::BoQCounter::HubLink.refresh { |_ok| push_auth_status(dlg) }
+          rescue => e
+            puts "Error reading login status: #{e.message}"
+            push_auth_status(dlg)
+          end
         end
 
         # Odoo answered 401: ask the Hub for a new token, then send the new status
@@ -155,9 +161,13 @@ module SkpCm
         end
 
         # Hub login/logout while this report is open → update it; stop listening once it is closed
-        listener = SkpCm::BoQCounter::HubLink.watch { |_logged_in| push_auth_status(dlg) }
-        dlg.set_on_closed { SkpCm::BoQCounter::HubLink.unwatch(listener) }
-        SkpCm::BoQCounter::HubLink.migrate_credentials { |_result| push_auth_status(dlg) }
+        begin
+          listener = SkpCm::BoQCounter::HubLink.watch { |_logged_in| push_auth_status(dlg) }
+          dlg.set_on_closed { SkpCm::BoQCounter::HubLink.unwatch(listener) }
+          SkpCm::BoQCounter::HubLink.migrate_credentials { |_result| push_auth_status(dlg) }
+        rescue => e
+          puts "Error connecting to Extensions Hub: #{e.message}" # the report still opens
+        end
 
         dlg.show
       end

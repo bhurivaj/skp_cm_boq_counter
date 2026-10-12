@@ -30,6 +30,9 @@ module SkpCm
         def watch(&listener)
           hub = auth
           hub ? hub.on_change(&listener) : nil
+        rescue StandardError => e
+          puts "SKP CM BoQ Counter: #{e.class}: #{e.message}"
+          nil
         end
 
         def unwatch(listener)
@@ -44,6 +47,15 @@ module SkpCm
           hub.relogin { |ok, _error| finish(done, ok) }
         end
 
+        # Logged in but no token (e.g. SketchUp started offline): ask the server again
+        def refresh(&done)
+          hub = auth
+          return finish(done, false) unless hub
+          return finish(done, true) unless hub.logged_in? && hub.token.nil?
+
+          relogin(&done)
+        end
+
         def show_login
           hub = auth
           return false unless hub
@@ -53,7 +65,7 @@ module SkpCm
         end
 
         # Moves the BoQ 1.x account to the Hub (spec §4.4). Yields :none, :no_hub,
-        # :hub_has_account, :imported, :rejected or :retry_later
+        # :hub_has_account, :imported, :rejected, :retry_later or :error
         def migrate_credentials(&done)
           creds = ConfigManager.legacy_credentials
           return finish(done, :none) unless creds
@@ -75,6 +87,9 @@ module SkpCm
               finish(done, :retry_later)
             end
           end
+        rescue StandardError => e
+          puts "SKP CM BoQ Counter: could not move the old account (#{e.class}: #{e.message})"
+          finish(done, :error)
         end
 
         private
