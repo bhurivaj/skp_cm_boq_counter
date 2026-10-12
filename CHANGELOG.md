@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.1] - 2026-10-12
+
+### Changed
+- ออกแบบหน้า BoQ Report ใหม่ให้เป็นโทนเดียวกับ SKP CM Grid Dimension / Ropefall: ธีมสว่าง/มืดตามระบบ, หัวตารางติดด้านบนเวลาเลื่อน, ปุ่ม Save as CSV อยู่ด้านล่างเสมอ, จำนวนชิดขวา, ไอคอน SVG แทน emoji, หน้า Settings และ toast แบบใหม่
+- ไม่โหลด Tailwind จาก CDN แล้ว (ใช้ `report.css` + `report_parts.css` แทน) — ยังต้องใช้อินเทอร์เน็ตโหลด Vue เหมือนเดิม
+
 ## [2.0.0] - 2026-10-12
 
 ### Removed

@@ -4,7 +4,7 @@ require 'json'
 
 module SkpCm
   module BoQCounter
-    # Builds the report page: report.html with report.css, the BoQ data and report.js inlined.
+    # Builds the report page: report.html with report.css + report_parts.css, the BoQ data and report.js inlined.
     # Everything is inlined because the dialog uses set_html (relative src paths do not resolve there).
     module HtmlGenerator
       def self.generate_html(data, filename, project_number, revise_no, date_modified)
@@ -15,7 +15,7 @@ module SkpCm
         }
         # block form of sub: the inserted text is used as-is (no \1 or \\ handling)
         read('report.html')
-          .sub('__REPORT_CSS__') { read('report.css') }
+          .sub('__REPORT_CSS__') { read('report.css') + read('report_parts.css') }
           .sub('__REPORT_JS__') { read('report.js') }
           .sub('__BOQ_DATA__') { "window.BOQ_DATA = #{json_for_script(boq)};" }
       end

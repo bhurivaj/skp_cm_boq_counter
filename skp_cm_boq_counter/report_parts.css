@@ -1,0 +1,142 @@
+/* BoQ Report — actions, buttons, settings modal, toast (tokens: report.css) */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 14px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.btn:hover { border-color: var(--ink-3); }
+
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--lift);
+}
+
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-primary:active { transform: translateY(1px); }
+
+.btn:disabled,
+.btn:disabled:hover {
+  cursor: not-allowed;
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink-3);
+  box-shadow: none;
+  transform: none;
+}
+
+button:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* Settings modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 22, 0.45);
+  animation: fade 0.15s ease-out;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--ground);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 18px 40px rgba(10, 14, 22, 0.28), 0 2px 6px rgba(10, 14, 22, 0.12);
+  animation: rise 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-content h2 {
+  padding: 16px 20px 12px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.modal-section {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.modal-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.modal-section p {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-bottom: 10px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--line);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(10, 14, 22, 0.18), 0 1px 3px rgba(10, 14, 22, 0.1);
+  animation: rise 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.toast.success .dot { background: var(--ok); }
+.toast.error .dot { background: var(--danger); }
+.toast.info .dot { background: var(--accent); }
+
+@media (prefers-color-scheme: dark) {
+  .modal-overlay { background: rgba(0, 0, 0, 0.6); }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal-content, .toast { animation: none; }
+}

@@ -5,141 +5,131 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BoQ Report - Classmat Suite</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     __REPORT_CSS__
   </style>
 </head>
-<body class="bg-gray-100 p-6">
-  <div id="app" class="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow-lg border border-gray-300">
+<body>
+  <div id="app" class="page">
     <!-- Header with Settings and Auth Status -->
-    <div class="flex justify-between items-center mb-4">
-      <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold">Bill of Quantities Report</h2>
-        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">Classmat Suite</span>
-        <span v-if="auth.logged_in" class="badge badge-success">
-          🔒 {{ auth.username }}<template v-if="!auth.online"> (ออฟไลน์)</template>
-        </span>
-        <span v-else-if="auth.hub" class="badge badge-error cursor-pointer" @click="openHubLogin" title="เปิด SKP CM Extensions Hub">
-          🔓 ยังไม่ได้ login — คลิกเพื่อ Login ใน Hub
-        </span>
-        <span v-else class="badge badge-error" :title="authHint">
-          ⚠ ต้องติดตั้ง SKP CM Extensions Hub
-        </span>
-      </div>
-      <button @click="showSettings = true" class="p-2 hover:bg-gray-100 rounded-full transition" title="Settings">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+    <header class="page-header">
+      <h1>Bill of Quantities Report</h1>
+      <span class="tag">Classmat Suite</span>
+      <span v-if="auth.logged_in" class="status ok">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+        {{ auth.username }}<template v-if="!auth.online"> (ออฟไลน์)</template>
+      </span>
+      <button v-else-if="auth.hub" class="status warn" @click="openHubLogin" title="เปิด SKP CM Extensions Hub">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2"/><path d="M5.5 7V5a2.5 2.5 0 014.9-.7"/></svg>
+        ยังไม่ได้ login — คลิกเพื่อ Login ใน Hub
+      </button>
+      <span v-else class="status warn" :title="authHint">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5l6 11H2z"/><path d="M8 6.8v3M8 11.8v.1"/></svg>
+        ต้องติดตั้ง SKP CM Extensions Hub
+      </span>
+      <button @click="showSettings = true" class="icon-btn" title="Settings" aria-label="Settings">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
       </button>
-    </div>
+    </header>
 
     <!-- Project Info -->
-    <div class="grid grid-cols-2 gap-4 mb-4 p-4 border border-gray-300 rounded bg-gray-50">
+    <section class="project">
+      <dl class="meta">
+        <dt>Filename:</dt>
+        <dd :title="filename">{{ filename }}</dd>
+      </dl>
+      <dl class="meta">
+        <dt>Project Number:</dt>
+        <dd>{{ projectNumber }}</dd>
+      </dl>
       <div>
-        <p><strong>Filename:</strong> {{ filename }}</p>
-        <p><strong>Project Number:</strong> {{ projectNumber }}</p>
+        <label class="field-label" for="reviseNo">Revise No:</label>
+        <input id="reviseNo" type="text" v-model="reviseNo" class="input">
       </div>
       <div>
-        <label class="font-bold">Revise No:</label>
-        <input type="text" v-model="reviseNo" class="border border-gray-400 px-2 py-1 rounded w-full mb-2">
-        <label class="font-bold">Date Updated:</label>
-        <input type="date" v-model="dateUpdated" class="border border-gray-400 px-2 py-1 rounded w-full">
+        <label class="field-label" for="dateUpdated">Date Updated:</label>
+        <input id="dateUpdated" type="date" v-model="dateUpdated" class="input">
       </div>
-    </div>
+    </section>
 
     <!-- Search and Stats -->
-    <div class="flex justify-between items-center mb-4">
-      <input 
-        type="text" 
-        v-model="searchQuery" 
-        placeholder="🔍 Search components..." 
-        class="border border-gray-400 px-4 py-2 rounded w-96 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-      <div class="text-sm text-gray-600">
-        <span class="font-semibold">Total Items:</span> {{ filteredData.length }} | 
-        <span class="font-semibold">Total Qty:</span> {{ totalQuantity }}
+    <div class="toolbar">
+      <div class="search">
+        <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+        <input type="text" v-model="searchQuery" placeholder="Search components..." class="input">
+      </div>
+      <div class="stats">
+        Total Items: <b>{{ filteredData.length }}</b><span class="sep">|</span>Total Qty: <b>{{ totalQuantity }}</b>
       </div>
     </div>
 
     <!-- Table -->
-    <table class="w-full table-auto border-collapse border border-gray-300">
-      <thead>
-        <tr class="bg-gray-200">
-          <th @click="sortTable('name')" class="border border-gray-300 px-4 py-2 cursor-pointer hover:bg-gray-300 transition">
-            Component Name <span v-if="sortKey === 'name'">{{ sortOrder === 1 ? '▲' : '▼' }}</span>
-          </th>
-          <th @click="sortTable('count')" class="border border-gray-300 px-4 py-2 cursor-pointer hover:bg-gray-300 transition">
-            Quantity <span v-if="sortKey === 'count'">{{ sortOrder === 1 ? '▲' : '▼' }}</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in filteredData" :key="item.name" class="hover:bg-gray-100 transition">
-          <td class="border border-gray-300 px-4 py-2">{{ item.name }}</td>
-          <td class="border border-gray-300 px-4 py-2 text-center font-semibold">{{ item.count }}</td>
-        </tr>
-        <tr v-if="filteredData.length === 0">
-          <td colspan="2" class="border border-gray-300 px-4 py-8 text-center text-gray-500">
-            No components found matching "{{ searchQuery }}"
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th @click="sortTable('name')">
+              Component Name <span v-if="sortKey === 'name'" class="arrow">{{ sortOrder === 1 ? '▲' : '▼' }}</span>
+            </th>
+            <th @click="sortTable('count')" class="num">
+              Quantity <span v-if="sortKey === 'count'" class="arrow">{{ sortOrder === 1 ? '▲' : '▼' }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in filteredData" :key="item.name">
+            <td>{{ item.name }}</td>
+            <td class="num">{{ item.count }}</td>
+          </tr>
+          <tr v-if="filteredData.length === 0">
+            <td colspan="2" class="empty">No components found matching "{{ searchQuery }}"</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- Action Buttons -->
-    <div class="flex justify-end mt-4 space-x-2">
-      <button @click="saveCsv" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition">
-        Save as CSV
-      </button>
+    <div class="actions">
       <!-- Stock Request is paused while the document workflow changes -->
-      <button disabled class="bg-green-500 text-white px-4 py-2 rounded opacity-50 cursor-not-allowed" title="ยังไม่พร้อมใช้งาน (กำลังปรับ workflow เอกสาร)">
+      <button disabled class="btn" title="ยังไม่พร้อมใช้งาน (กำลังปรับ workflow เอกสาร)">
         Send Stock Request
+      </button>
+      <button @click="saveCsv" class="btn btn-primary">
+        Save as CSV
       </button>
     </div>
 
     <!-- Settings Modal -->
     <div v-if="showSettings" class="modal-overlay" @click.self="showSettings = false">
-      <div class="modal-content">
-        <h3 class="text-xl font-bold mb-4">Settings</h3>
+      <div class="modal-content" role="dialog" aria-label="Settings">
+        <h2>Settings</h2>
 
         <!-- Account (managed in SKP CM Extensions Hub) -->
-        <div class="mb-6 pb-6 border-b">
-          <h4 class="font-semibold mb-3">บัญชี</h4>
-          <p class="mb-3 text-sm text-gray-600">{{ auth.logged_in ? ('Login อยู่: ' + auth.username) : authHint }}</p>
-          <button @click="openHubLogin" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition">
-            จัดการบัญชีใน Hub
-          </button>
+        <div class="modal-section">
+          <h3>บัญชี</h3>
+          <p>{{ auth.logged_in ? ('Login อยู่: ' + auth.username) : authHint }}</p>
+          <button @click="openHubLogin" class="btn">จัดการบัญชีใน Hub</button>
         </div>
 
         <!-- Report settings -->
-        <div class="mb-4">
-
-          <label class="block font-semibold mb-2">Expected Return Days:</label>
-          <input 
-            type="number" 
-            v-model.number="settings.expectedDays" 
-            class="border border-gray-400 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            min="1"
-            max="365"
-          >
+        <div class="modal-section">
+          <label class="field-label" for="expectedDays">Expected Return Days:</label>
+          <input id="expectedDays" type="number" v-model.number="settings.expectedDays" class="input" min="1" max="365">
         </div>
 
-        <div class="flex justify-end space-x-2 mt-4">
-          <button @click="showSettings = false" class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded transition">
-            Close
-          </button>
-          <button @click="saveSettings" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition">
-            Save Settings
-          </button>
+        <div class="modal-actions">
+          <button @click="showSettings = false" class="btn">Close</button>
+          <button @click="saveSettings" class="btn btn-primary">Save Settings</button>
         </div>
       </div>
     </div>
 
     <!-- Toast Notifications -->
-    <div v-if="toast.show" :class="['toast', toast.type]">
-      {{ toast.message }}
+    <div v-if="toast.show" :class="['toast', toast.type]" role="status">
+      <span class="dot"></span>{{ toast.message }}
     </div>
   </div>
 
