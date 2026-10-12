@@ -10,10 +10,12 @@ SketchUp plugin สำหรับนับ component และสร้าง B
 
 SketchUp → Extensions → Extension Manager → Install Extension → เลือก `skp_cm_boq_counter_<version>.rbz`
 
-## บัญชี / Send Stock Request
+## บัญชี
 
-Send Stock Request ต้องติดตั้ง **SKP CM Extensions Hub 0.4.0+** และ login ที่การ์ด "บัญชี" ใน Hub
-(Save as CSV ใช้ได้โดยไม่ต้อง login). บัญชีที่ BoQ 1.x บันทึกไว้จะถูกย้ายไป Hub อัตโนมัติเมื่อเปิดหน้า BoQ Report
+บัญชี Odoo จัดการที่การ์ด "บัญชี" ใน **SKP CM Extensions Hub 0.4.0+** — หัว BoQ Report แสดงสถานะ login จาก Hub
+บัญชีที่ BoQ 1.x บันทึกไว้จะถูกย้ายไป Hub อัตโนมัติเมื่อเปิดหน้า BoQ Report. Save as CSV ใช้ได้โดยไม่ต้อง login
+
+**Send Stock Request ปิดไว้ชั่วคราว** ระหว่างปรับ workflow เอกสาร
 
 ## ย้ายจาก Classmat Suite
 

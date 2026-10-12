@@ -23,14 +23,13 @@ end
 # Same public methods as SkpCm::ExtensionsHub::Auth (skp_cm_extensions_hub/auth.rb, spec §3.4)
 module FakeAuth
   class << self
-    attr_accessor :logged_in, :username, :token, :api_base_url, :imports, :listeners, :shown,
+    attr_accessor :logged_in, :username, :uid, :imports, :listeners, :shown,
                   :import_reply, :relogin_reply, :relogins, :broken
 
     def reset
       self.logged_in = false
       self.username = nil
-      self.token = nil
-      self.api_base_url = 'https://odoo.test'
+      self.uid = nil
       self.imports = []
       self.listeners = []
       self.shown = false
@@ -109,7 +108,7 @@ class TestHubLink < Minitest::Test
 
   def test_status_when_old_hub_without_auth
     no_hub
-    expected = { 'hub' => false, 'logged_in' => false, 'username' => nil, 'token' => nil, 'api_base_url' => nil }
+    expected = { 'hub' => false, 'logged_in' => false, 'username' => nil, 'online' => false }
     assert_equal expected, HL.status
     assert_nil HL.watch { |_| }
     HL.unwatch(nil)
@@ -120,9 +119,8 @@ class TestHubLink < Minitest::Test
   def test_status_from_hub
     FakeAuth.logged_in = true
     FakeAuth.username = 'a@b.c'
-    FakeAuth.token = 't'
-    expected = { 'hub' => true, 'logged_in' => true, 'username' => 'a@b.c', 'token' => 't',
-                 'api_base_url' => 'https://odoo.test' }
+    FakeAuth.uid = 7
+    expected = { 'hub' => true, 'logged_in' => true, 'username' => 'a@b.c', 'online' => true }
     assert_equal expected, HL.status
   end
 
@@ -186,15 +184,15 @@ class TestHubLink < Minitest::Test
   end
 
   # SketchUp started offline: the report asks again when it opens
-  def test_refresh_reconnects_only_when_logged_in_without_token
+  def test_refresh_reconnects_only_when_logged_in_but_offline
     result = nil
     HL.refresh { |ok| result = ok }
     assert_equal 0, FakeAuth.relogins, 'not logged in: nothing to do'
     FakeAuth.logged_in = true
-    FakeAuth.token = 't'
+    FakeAuth.uid = 7
     HL.refresh { |ok| result = ok }
     assert_equal 0, FakeAuth.relogins, 'online: nothing to do'
-    FakeAuth.token = nil
+    FakeAuth.uid = nil
     HL.refresh { |ok| result = ok }
     assert_equal 1, FakeAuth.relogins
     assert_equal true, result

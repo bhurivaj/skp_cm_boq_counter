@@ -142,16 +142,6 @@ module SkpCm
           end
         end
 
-        # Odoo answered 401: ask the Hub for a new token, then send the new status
-        dlg.add_action_callback("relogin") do |_dlg, _params|
-          begin
-            SkpCm::BoQCounter::HubLink.relogin { |_ok| push_auth_status(dlg) }
-          rescue => e
-            puts "Error during relogin: #{e.message}"
-            push_auth_status(dlg)
-          end
-        end
-
         dlg.add_action_callback("open_hub_login") do |_dlg, _params|
           begin
             UI.messagebox(SkpCm::BoQCounter::HubLink::MISSING_MESSAGE) unless SkpCm::BoQCounter::HubLink.show_login

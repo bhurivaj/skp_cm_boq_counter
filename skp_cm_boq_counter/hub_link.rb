@@ -19,11 +19,11 @@ module SkpCm
         def status
           hub = auth
           unless hub
-            return { 'hub' => false, 'logged_in' => false, 'username' => nil, 'token' => nil, 'api_base_url' => nil }
+            return { 'hub' => false, 'logged_in' => false, 'username' => nil, 'online' => false }
           end
 
           { 'hub' => true, 'logged_in' => hub.logged_in?, 'username' => hub.username,
-            'token' => hub.token, 'api_base_url' => hub.api_base_url }
+            'online' => !hub.uid.nil? }
         end
 
         # Returns the listener to pass to unwatch, or nil when there is no Hub
@@ -47,11 +47,11 @@ module SkpCm
           hub.relogin { |ok, _error| finish(done, ok) }
         end
 
-        # Logged in but no token (e.g. SketchUp started offline): ask the server again
+        # Logged in but not connected (e.g. SketchUp started offline): ask the server again
         def refresh(&done)
           hub = auth
           return finish(done, false) unless hub
-          return finish(done, true) unless hub.logged_in? && hub.token.nil?
+          return finish(done, true) unless hub.logged_in? && hub.uid.nil?
 
           relogin(&done)
         end

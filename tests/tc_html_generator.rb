@@ -56,8 +56,18 @@ class TestHtmlGenerator < Minitest::Test
     %w[saveAndLogin testLogin credentials authToken isLoggingIn apiBaseUrl load_credentials].each do |old|
       refute_includes page, old
     end
-    %w[window.authStatus apiFetch openHubLogin canSendRequest auth_status].each do |used|
+    %w[window.authStatus openHubLogin auth_status].each do |used|
       assert_includes page, used
     end
+  end
+
+  # Stock Request is paused while the document workflow changes (spec §7)
+  def test_stock_request_is_paused
+    page = html
+    %w[apiFetch /stock-requests/ /locations/ showStockRequestModal sendStockRequest .token relogin].each do |old|
+      refute_includes page, old
+    end
+    assert_includes page, 'ยังไม่พร้อมใช้งาน'
+    assert_match(/<button[^>]*disabled[^>]*>\s*Send Stock Request/m, page)
   end
 end
