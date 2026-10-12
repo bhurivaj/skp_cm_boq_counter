@@ -119,7 +119,7 @@ createApp({
     };
 
     return { 
-      sortedData, filteredData, sortTable, filename, projectNumber, reviseNo, dateUpdated, 
+      sortedData, filteredData, sortTable, sortKey, sortOrder, filename, projectNumber, reviseNo, dateUpdated, 
       searchQuery, totalQuantity, showSettings, settings, auth, authHint, toast,
       saveCsv, saveSettings, openHubLogin
     };

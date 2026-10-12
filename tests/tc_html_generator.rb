@@ -70,4 +70,12 @@ class TestHtmlGenerator < Minitest::Test
     assert_includes page, 'ยังไม่พร้อมใช้งาน'
     assert_match(/<button[^>]*disabled[^>]*>\s*Send Stock Request/m, page)
   end
+
+  # every name the template uses must be returned from setup() (sort arrows used sortKey/sortOrder)
+  def test_template_names_are_returned_from_setup
+    returned = File.read(File.join(DIR, 'report.js'))[/return \{(.*?)\};/m, 1].split(/[\s,]+/).reject(&:empty?)
+    %w[sortKey sortOrder sortTable filteredData totalQuantity auth authHint openHubLogin].each do |name|
+      assert_includes returned, name
+    end
+  end
 end
