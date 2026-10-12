@@ -107,11 +107,9 @@ module SkpCm
         dlg.add_action_callback("save_settings") do |_dlg, params|
           begin
             parsed_params = URI.decode_www_form(params).to_h
-            config = {}
-            config['api_endpoint'] = parsed_params['apiEndpoint'] if parsed_params['apiEndpoint']
-            config['expected_days_offset'] = parsed_params['expectedDays'].to_i if parsed_params['expectedDays']
+            config = SkpCm::BoQCounter::ConfigManager.settings_from_params(parsed_params)
             
-            if SkpCm::BoQCounter::ConfigManager.save_config(config)
+            if !config.empty? && SkpCm::BoQCounter::ConfigManager.save_config(config)
               dlg.execute_script("window.settingsSaved && window.settingsSaved(true)")
             else
               dlg.execute_script("window.settingsSaved && window.settingsSaved(false)")
@@ -130,47 +128,6 @@ module SkpCm
             dlg.execute_script("window.loadedSettings && window.loadedSettings(#{config_json})")
           rescue => e
             puts "Error loading settings: #{e.message}"
-          end
-        end
-        
-        # Callback for saving credentials
-        dlg.add_action_callback("save_credentials") do |_dlg, params|
-          begin
-            parsed_params = URI.decode_www_form(params).to_h
-            username = parsed_params['username']
-            password = parsed_params['password']
-            
-            if username && password && !username.empty? && !password.empty?
-              SkpCm::BoQCounter::ConfigManager.save_credentials(username, password)
-              dlg.execute_script("window.credentialsSaved && window.credentialsSaved(true)")
-            else
-              dlg.execute_script("window.credentialsSaved && window.credentialsSaved(false, 'Username and password are required')")
-            end
-          rescue => e
-            puts "Error saving credentials: #{e.message}"
-            dlg.execute_script("window.credentialsSaved && window.credentialsSaved(false, '#{e.message}')")
-          end
-        end
-        
-        # Callback for loading credentials
-        dlg.add_action_callback("load_credentials") do |_dlg, _params|
-          begin
-            creds = SkpCm::BoQCounter::ConfigManager.get_credentials
-            creds_json = creds.to_json.gsub("'", "\\'")
-            dlg.execute_script("window.loadedCredentials && window.loadedCredentials(#{creds_json})")
-          rescue => e
-            puts "Error loading credentials: #{e.message}"
-          end
-        end
-        
-        # Callback for clearing credentials
-        dlg.add_action_callback("clear_credentials") do |_dlg, _params|
-          begin
-            SkpCm::BoQCounter::ConfigManager.clear_credentials
-            dlg.execute_script("window.credentialsCleared && window.credentialsCleared(true)")
-          rescue => e
-            puts "Error clearing credentials: #{e.message}"
-            dlg.execute_script("window.credentialsCleared && window.credentialsCleared(false)")
           end
         end
         

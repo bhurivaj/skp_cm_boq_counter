@@ -89,16 +89,16 @@ class TestConfigManager < Minitest::Test
     assert_equal true, CM.migrate_legacy_config
     assert File.exist?(CM.config_file_path)
     assert File.exist?(legacy_path), 'legacy file must not be deleted'
-    assert_equal({ 'username' => 'alice', 'password' => 's3cret' }, CM.get_credentials)
+    assert_equal({ 'username' => 'alice', 'password' => 's3cret' }, CM.legacy_credentials)
     assert_equal 7, CM.get('expected_days_offset')
   end
 
   def test_migrate_does_not_overwrite_existing_config
-    CM.save_credentials('new_user', 'new_pass')
+    CM.save_config('username' => 'new_user', 'password' => CM.encrypt('new_pass'))
     write_legacy('username' => 'old_user', 'password' => CM.encrypt('old_pass'))
 
     assert_equal false, CM.migrate_legacy_config
-    assert_equal 'new_user', CM.get_credentials['username']
+    assert_equal 'new_user', CM.legacy_credentials['username']
   end
 
   def test_migrate_without_legacy_config_does_nothing
@@ -125,7 +125,7 @@ class TestConfigManager < Minitest::Test
     File.write(legacy_path, '{"username": "ali')
 
     assert_equal true, CM.migrate_legacy_config
-    assert_equal CM::DEFAULTS['api_base_url'], CM.load_config['api_base_url']
+    assert_equal CM::DEFAULTS['expected_days_offset'], CM.load_config['expected_days_offset']
   end
 
   # --- unchanged behaviour ---
@@ -133,5 +133,46 @@ class TestConfigManager < Minitest::Test
   def test_encrypt_decrypt_round_trip_with_original_key
     assert_equal 'ClassmatSuite2025', CM::ENCRYPTION_KEY
     assert_equal 'pässwörd', CM.decrypt(CM.encrypt('pässwörd')).force_encoding('UTF-8')
+  end
+
+  # --- moving the account to the Extensions Hub ---
+
+  def test_legacy_credentials_nil_when_missing_or_partial
+    assert_nil CM.legacy_credentials
+    CM.save_config('username' => 'alice', 'password' => '')
+    assert_nil CM.legacy_credentials
+  end
+
+  def test_legacy_credentials_with_thai_password
+    CM.save_config('username' => 'alice', 'password' => CM.encrypt('รหัสผ่าน'))
+    assert_equal({ 'username' => 'alice', 'password' => 'รหัสผ่าน' }, CM.legacy_credentials)
+  end
+
+  def test_clear_legacy_credentials_keeps_other_settings
+    CM.save_config('username' => 'alice', 'password' => CM.encrypt('pw'), 'expected_days_offset' => 9)
+    assert_equal true, CM.clear_legacy_credentials
+    saved = JSON.parse(File.read(CM.config_file_path))
+    refute saved.key?('username')
+    refute saved.key?('password')
+    assert_equal 9, saved['expected_days_offset']
+    assert_nil CM.legacy_credentials
+  end
+
+  def test_clear_without_config_file_is_ok
+    assert_equal true, CM.clear_legacy_credentials
+    refute File.exist?(CM.config_file_path)
+  end
+
+  def test_defaults_have_no_login_keys
+    %w[username password api_base_url auth_endpoint locations_endpoint stock_request_endpoint].each do |key|
+      refute CM::DEFAULTS.key?(key), key
+    end
+  end
+
+  def test_settings_from_params
+    assert_equal({ 'expected_days_offset' => 7 }, CM.settings_from_params('expected_days_offset' => '7', 'api_base_url' => 'x'))
+    assert_equal({}, CM.settings_from_params('expected_days_offset' => '0'))
+    assert_equal({}, CM.settings_from_params('expected_days_offset' => '400'))
+    assert_equal({}, CM.settings_from_params('expectedDays' => '7'))
   end
 end

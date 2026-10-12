@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Removed
+- BoQ ไม่เก็บ username/password เองแล้ว (ย้ายไป SKP CM Extensions Hub)
+
+### Fixed
+- ค่า Expected Return Days ใน Settings บันทึกไม่ได้ (ชื่อ key ไม่ตรงกันระหว่าง JS กับ Ruby)
+
 ## [1.0.0] - 2026-10-11
 
 ### Added

@@ -7,26 +7,16 @@ require 'base64'
 module SkpCm
   module BoQCounter
     module ConfigManager
-      # Default configuration values
+      # Default configuration values (the login lives in SKP CM Extensions Hub since 2.0.0)
       DEFAULTS = {
-        # API Configuration
-        'api_base_url' => 'https://odoo.catice.co',
-        'auth_endpoint' => '/auth/login/access-token',
-        'locations_endpoint' => '/locations/',
-        'stock_request_endpoint' => '/stock-requests/',
-        
         # Legacy settings (for backward compatibility)
         'api_endpoint' => 'https://odoo.catice.co/api/equipment_request',
         'expected_days_offset' => 4,
         'project_number_pattern' => 'OPP-\\d{11}',
-        
+
         # Request defaults
         'default_request_type' => 'issue',
-        'default_status' => 'draft',
-        
-        # Auth (will be empty by default)
-        'username' => '',
-        'password' => ''
+        'default_status' => 'draft'
       }.freeze
 
       # Simple XOR encryption key (basic obfuscation - not cryptographically secure)
@@ -145,23 +135,6 @@ module SkpCm
         save_config(config)
       end
 
-      # API endpoint getters
-      def self.api_base_url
-        get('api_base_url')
-      end
-
-      def self.auth_endpoint
-        "#{api_base_url}#{get('auth_endpoint')}"
-      end
-
-      def self.locations_endpoint
-        "#{api_base_url}#{get('locations_endpoint')}"
-      end
-
-      def self.stock_request_endpoint
-        "#{api_base_url}#{get('stock_request_endpoint')}"
-      end
-
       # Get expected days offset
       def self.expected_days_offset
         get('expected_days_offset')
@@ -182,30 +155,32 @@ module SkpCm
         get('default_status')
       end
 
-      # Credential management
-      def self.save_credentials(username, password)
-        config = {
-          'username' => username,
-          'password' => encrypt(password)
-        }
-        save_config(config)
-      end
-
-      def self.get_credentials
+      # Account saved by BoQ 1.x — only read to move it to the Extensions Hub (HubLink.migrate_credentials)
+      def self.legacy_credentials
         config = load_config
-        {
-          'username' => config['username'] || '',
-          'password' => decrypt(config['password'] || '')
-        }
+        username = config['username'].to_s
+        password = decrypt(config['password'].to_s).dup.force_encoding('UTF-8')
+        return nil if username.empty? || password.empty?
+
+        { 'username' => username, 'password' => password }
       end
 
-      def self.has_credentials?
-        creds = get_credentials
-        !creds['username'].empty? && !creds['password'].empty?
+      # save_config merges, so it cannot remove keys — rewrite the file without them
+      def self.clear_legacy_credentials
+        return true unless File.exist?(config_file_path)
+
+        config = load_config.reject { |key, _| %w[username password].include?(key) }
+        File.write(config_file_path, JSON.pretty_generate(config))
+        true
+      rescue SystemCallError, IOError => e
+        puts "SKP CM BoQ Counter: could not clear old credentials (#{e.message})"
+        false
       end
 
-      def self.clear_credentials
-        save_config({'username' => '', 'password' => ''})
+      # Settings form → config (Expected Return Days is the only editable setting)
+      def self.settings_from_params(params)
+        days = params['expected_days_offset'].to_i
+        days.between?(1, 365) ? { 'expected_days_offset' => days } : {}
       end
     end
   end
