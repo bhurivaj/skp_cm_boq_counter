@@ -5,6 +5,10 @@
 ### Removed
 - BoQ ไม่เก็บ username/password เองแล้ว (ย้ายไป SKP CM Extensions Hub)
 
+### Changed
+- Send Stock Request ใช้บัญชีจาก SKP CM Extensions Hub (ต้องติดตั้ง Hub 0.4.0+ และ login ที่ Hub)
+- บัญชีที่ BoQ 1.x บันทึกไว้ถูกย้ายไป Hub อัตโนมัติเมื่อเปิดหน้า BoQ Report
+
 ### Fixed
 - ค่า Expected Return Days ใน Settings บันทึกไม่ได้ (ชื่อ key ไม่ตรงกันระหว่าง JS กับ Ruby)
 

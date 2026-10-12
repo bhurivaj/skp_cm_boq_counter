@@ -2,6 +2,7 @@
 
 require 'csv'
 require 'date'
+require 'json'
 require 'uri'
 
 module SkpCm
@@ -131,7 +132,41 @@ module SkpCm
           end
         end
         
+        dlg.add_action_callback("auth_status") do |_dlg, _params|
+          push_auth_status(dlg)
+        end
+
+        # Odoo answered 401: ask the Hub for a new token, then send the new status
+        dlg.add_action_callback("relogin") do |_dlg, _params|
+          begin
+            SkpCm::BoQCounter::HubLink.relogin { |_ok| push_auth_status(dlg) }
+          rescue => e
+            puts "Error during relogin: #{e.message}"
+            push_auth_status(dlg)
+          end
+        end
+
+        dlg.add_action_callback("open_hub_login") do |_dlg, _params|
+          begin
+            UI.messagebox(SkpCm::BoQCounter::HubLink::MISSING_MESSAGE) unless SkpCm::BoQCounter::HubLink.show_login
+          rescue => e
+            puts "Error opening Extensions Hub: #{e.message}"
+          end
+        end
+
+        # Hub login/logout while this report is open → update it; stop listening once it is closed
+        listener = SkpCm::BoQCounter::HubLink.watch { |_logged_in| push_auth_status(dlg) }
+        dlg.set_on_closed { SkpCm::BoQCounter::HubLink.unwatch(listener) }
+        SkpCm::BoQCounter::HubLink.migrate_credentials { |_result| push_auth_status(dlg) }
+
         dlg.show
+      end
+
+      # Sends HubLink.status to window.authStatus in the report page
+      def self.push_auth_status(dlg)
+        dlg.execute_script("window.authStatus && window.authStatus(#{JSON.generate(SkpCm::BoQCounter::HubLink.status)})")
+      rescue => e
+        puts "Error sending login status: #{e.message}"
       end
 
       private

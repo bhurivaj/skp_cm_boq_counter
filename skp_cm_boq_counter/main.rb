@@ -2,6 +2,7 @@
 
 require 'sketchup.rb'
 require_relative 'config_manager'
+require_relative 'hub_link'
 require_relative 'html_generator'
 require_relative 'counter'
 require_relative 'legacy'
