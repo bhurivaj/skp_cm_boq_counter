@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [2.0.0] - 2026-10-12
 
 ### Removed
 - BoQ ไม่เก็บ username/password เองแล้ว (ย้ายไป SKP CM Extensions Hub)
