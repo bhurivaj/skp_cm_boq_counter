@@ -50,4 +50,14 @@ class TestHtmlGenerator < Minitest::Test
       assert File.readlines(File.join(DIR, f)).size <= 300, "#{f} is longer than 300 lines"
     end
   end
+
+  def test_login_form_is_gone_and_hub_status_is_used
+    page = html
+    %w[saveAndLogin testLogin credentials authToken isLoggingIn apiBaseUrl load_credentials].each do |old|
+      refute_includes page, old
+    end
+    %w[window.authStatus apiFetch openHubLogin canSendRequest auth_status].each do |used|
+      assert_includes page, used
+    end
+  end
 end

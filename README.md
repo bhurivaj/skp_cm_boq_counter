@@ -10,9 +10,14 @@ SketchUp plugin สำหรับนับ component และสร้าง B
 
 SketchUp → Extensions → Extension Manager → Install Extension → เลือก `skp_cm_boq_counter_<version>.rbz`
 
+## บัญชี / Send Stock Request
+
+Send Stock Request ต้องติดตั้ง **SKP CM Extensions Hub 0.4.0+** และ login ที่การ์ด "บัญชี" ใน Hub
+(Save as CSV ใช้ได้โดยไม่ต้อง login). บัญชีที่ BoQ 1.x บันทึกไว้จะถูกย้ายไป Hub อัตโนมัติเมื่อเปิดหน้า BoQ Report
+
 ## ย้ายจาก Classmat Suite
 
-ครั้งแรกที่เปิด plugin จะ copy ค่า settings และ login จาก `classmat_config.json` เดิมให้อัตโนมัติ
+ครั้งแรกที่เปิด plugin จะ copy ค่า settings และ login จาก `classmat_config.json` เดิมให้อัตโนมัติ (login ถูกย้ายต่อไป Hub)
 ถ้ายังมี Classmat Suite ตัวเก่า plugin จะแสดงรายการไฟล์ที่ต้องลบในโฟลเดอร์ Plugins
 
 ## Config

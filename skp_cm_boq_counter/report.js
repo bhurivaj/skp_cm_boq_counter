@@ -11,18 +11,21 @@ createApp({
     const sortOrder = ref(1);
     const searchQuery = ref('');
     const isLoading = ref(false);
-    const isLoggingIn = ref(false);
     const showSettings = ref(false);
     const showStockRequestModal = ref(false);
 
-    // Authentication
-    const authToken = ref(null);
-    const authUsername = ref('');
-    const credentials = ref({ username: '', password: '' });
+    // The account lives in SKP CM Extensions Hub — Ruby sends it via window.authStatus (counter.rb)
+    const auth = ref({ hub: false, logged_in: false, username: null, token: null, api_base_url: null });
+    const canSendRequest = computed(() => auth.value.logged_in && !!auth.value.token);
+    const authHint = computed(() => {
+      if (!auth.value.hub) return 'ต้องติดตั้งหรืออัปเดต SKP CM Extensions Hub (0.4.0 ขึ้นไป) แล้ว restart SketchUp';
+      if (!auth.value.logged_in) return 'กรุณา login ใน SKP CM Extensions Hub';
+      if (!auth.value.token) return 'เชื่อมต่อ server ไม่ได้ (ออฟไลน์)';
+      return '';
+    });
 
     // Settings
     const settings = ref({
-      apiBaseUrl: 'https://odoo.catice.co',
       expectedDays: 4
     });
 
@@ -44,13 +47,13 @@ createApp({
       type: 'success'
     });
 
-    // Load settings and credentials on mount
+    // Load settings and the Hub login status on mount
     onMounted(() => {
       if (window.sketchup && window.sketchup.load_settings) {
         window.sketchup.load_settings('');
       }
-      if (window.sketchup && window.sketchup.load_credentials) {
-        window.sketchup.load_credentials('');
+      if (window.sketchup && window.sketchup.auth_status) {
+        window.sketchup.auth_status('');
       }
       const defaultDate = new Date();
       defaultDate.setDate(defaultDate.getDate() + settings.value.expectedDays);
@@ -59,27 +62,34 @@ createApp({
     });
 
     window.loadedSettings = (config) => {
-      if (config.api_base_url) settings.value.apiBaseUrl = config.api_base_url;
       if (config.expected_days_offset) settings.value.expectedDays = config.expected_days_offset;
     };
 
-    window.loadedCredentials = (creds) => {
-      if (creds.username) {
-        credentials.value.username = creds.username;
-        credentials.value.password = creds.password;
-      }
+    // Called by Ruby on open, after relogin and whenever the Hub logs in/out
+    let waitingForAuth = [];
+    window.authStatus = (status) => {
+      const hadToken = !!auth.value.token;
+      auth.value = status;
+      if (!status.token) locations.value = [];
+      if (status.token && !hadToken) loadLocations();
+      const waiting = waitingForAuth;
+      waitingForAuth = [];
+      waiting.forEach((resolve) => resolve(status));
     };
+
+    // Ask the Hub to log in again; resolves with the next status from Ruby
+    const relogin = () => new Promise((resolve) => {
+      waitingForAuth.push(resolve);
+      try {
+        window.sketchup.relogin('');
+      } catch (e) {
+        waitingForAuth = waitingForAuth.filter((r) => r !== resolve);
+        resolve(auth.value);
+      }
+    });
 
     window.settingsSaved = (success) => {
       showToast(success ? 'Settings saved successfully!' : 'Failed to save settings', success ? 'success' : 'error');
-    };
-
-    window.credentialsSaved = (success, message) => {
-      showToast(success ? 'Credentials saved!' : (message || 'Failed to save credentials'), success ? 'success' : 'error');
-    };
-
-    window.credentialsCleared = (success) => {
-      showToast(success ? 'Logged out successfully' : 'Failed to clear credentials', success ? 'info' : 'error');
     };
 
     const filteredData = computed(() => {
@@ -133,7 +143,6 @@ createApp({
 
     const saveSettings = () => {
       const config = {
-        api_base_url: settings.value.apiBaseUrl,
         expected_days_offset: settings.value.expectedDays
       };
 
@@ -142,81 +151,25 @@ createApp({
       }
     };
 
-    const login = async (username, password) => {
-      try {
-        const formData = new FormData();
-        formData.append('username', username);
-        formData.append('password', password);
-
-        const response = await fetch(`${settings.value.apiBaseUrl}/auth/login/access-token`, {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!response.ok) throw new Error('Login failed: ' + response.status);
-
-        const result = await response.json();
-        authToken.value = result.access_token;
-        authUsername.value = username;
-        await loadLocations();
-        return { success: true };
-      } catch (error) {
-        return { success: false, error: error.message };
-      }
+    const openHubLogin = () => {
+      if (window.sketchup && window.sketchup.open_hub_login) window.sketchup.open_hub_login('');
     };
 
-    const saveAndLogin = async () => {
-      if (!credentials.value.username || !credentials.value.password) {
-        showToast('Please enter username and password', 'error');
-        return;
+    // fetch Odoo with the Hub token; on 401 ask the Hub to log in again and retry once
+    const apiFetch = async (path, options = {}, retried = false) => {
+      const headers = Object.assign({}, options.headers, { 'Authorization': `Bearer ${auth.value.token}` });
+      const response = await fetch(`${auth.value.api_base_url}${path}`, Object.assign({}, options, { headers }));
+      if (response.status === 401 && !retried) {
+        const status = await relogin();
+        if (status.token) return apiFetch(path, options, true);
       }
-      isLoggingIn.value = true;
-
-      const params = new URLSearchParams({
-        username: credentials.value.username,
-        password: credentials.value.password
-      }).toString();
-
-      if (window.sketchup && window.sketchup.save_credentials) {
-        window.sketchup.save_credentials(params);
-      }
-
-      const result = await login(credentials.value.username, credentials.value.password);
-      isLoggingIn.value = false;
-      showToast(result.success ? 'Logged in successfully!' : ('Login failed: ' + result.error), result.success ? 'success' : 'error');
-    };
-
-    const testLogin = async () => {
-      if (!credentials.value.username || !credentials.value.password) {
-        showToast('Please enter username and password', 'error');
-        return;
-      }
-      isLoggingIn.value = true;
-      const result = await login(credentials.value.username, credentials.value.password);
-      isLoggingIn.value = false;
-      if (result.success) {
-        showToast('Login test successful!', 'success');
-        authToken.value = null;
-      } else {
-        showToast('Login test failed: ' + result.error, 'error');
-      }
-    };
-
-    const logout = () => {
-      authToken.value = null;
-      authUsername.value = '';
-      locations.value = [];
-      if (window.sketchup && window.sketchup.clear_credentials) {
-        window.sketchup.clear_credentials('');
-      }
+      return response;
     };
 
     const loadLocations = async () => {
-      if (!authToken.value) return;
+      if (!auth.value.token) return;
       try {
-        const response = await fetch(`${settings.value.apiBaseUrl}/locations/`, {
-          headers: { 'Authorization': `Bearer ${authToken.value}` }
-        });
+        const response = await apiFetch('/locations/');
         if (!response.ok) throw new Error('Failed to load locations');
         locations.value = await response.json();
       } catch (error) {
@@ -233,12 +186,9 @@ createApp({
         showToast('Please enter project name', 'error');
         return;
       }
-      if (!authToken.value) {
-        const result = await login(credentials.value.username, credentials.value.password);
-        if (!result.success) {
-          showToast('Please login first', 'error');
-          return;
-        }
+      if (!canSendRequest.value) {
+        showToast(authHint.value, 'error');
+        return;
       }
 
       isLoading.value = true;
@@ -260,12 +210,9 @@ createApp({
           status: stockRequest.value.status
         };
 
-        const response = await fetch(`${settings.value.apiBaseUrl}/stock-requests/`, {
+        const response = await apiFetch('/stock-requests/', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken.value}`
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
         });
 
@@ -281,9 +228,9 @@ createApp({
 
     return { 
       sortedData, filteredData, sortTable, filename, projectNumber, reviseNo, dateUpdated, 
-      searchQuery, totalQuantity, isLoading, isLoggingIn, showSettings, showStockRequestModal,
-      settings, credentials, authToken, authUsername, stockRequest, locations, toast,
-      saveCsv, saveSettings, saveAndLogin, testLogin, logout, loadLocations, sendStockRequest
+      searchQuery, totalQuantity, isLoading, showSettings, showStockRequestModal,
+      settings, auth, canSendRequest, authHint, stockRequest, locations, toast,
+      saveCsv, saveSettings, openHubLogin, loadLocations, sendStockRequest
     };
   }
 }).mount('#app');

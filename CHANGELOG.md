@@ -4,11 +4,13 @@
 
 ### Removed
 - BoQ ไม่เก็บ username/password เองแล้ว (ย้ายไป SKP CM Extensions Hub)
+- ฟอร์ม Login / Test / Logout และช่อง API Base URL ในหน้า Settings ของ BoQ Report (จัดการที่ Hub แทน)
 
 ### Changed
 - Send Stock Request ใช้บัญชีจาก SKP CM Extensions Hub (ต้องติดตั้ง Hub 0.4.0+ และ login ที่ Hub)
 - บัญชีที่ BoQ 1.x บันทึกไว้ถูกย้ายไป Hub อัตโนมัติเมื่อเปิดหน้า BoQ Report
 - แยกหน้า report เป็น `report.html` / `report.css` / `report.js` (ภายใน — หน้าตาเหมือนเดิม)
+- หัวหน้า BoQ Report แสดงสถานะบัญชีจาก Hub (login / ออฟไลน์ / ยังไม่ติดตั้ง Hub); token หมดอายุ (401) จะ login ใหม่ผ่าน Hub แล้วลองอีกครั้งอัตโนมัติ
 
 ### Fixed
 - ค่า Expected Return Days ใน Settings บันทึกไม่ได้ (ชื่อ key ไม่ตรงกันระหว่าง JS กับ Ruby)

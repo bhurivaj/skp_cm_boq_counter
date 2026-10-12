@@ -17,11 +17,14 @@
       <div class="flex items-center gap-4">
         <h2 class="text-2xl font-bold">Bill of Quantities Report</h2>
         <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">Classmat Suite</span>
-        <span v-if="authToken" class="badge badge-success">
-          🔒 {{ authUsername }}
+        <span v-if="auth.logged_in" class="badge badge-success">
+          🔒 {{ auth.username }}<template v-if="!auth.token"> (ออฟไลน์)</template>
         </span>
-        <span v-else class="badge badge-error">
-          🔓 Not logged in
+        <span v-else-if="auth.hub" class="badge badge-error cursor-pointer" @click="openHubLogin" title="เปิด SKP CM Extensions Hub">
+          🔓 ยังไม่ได้ login — คลิกเพื่อ Login ใน Hub
+        </span>
+        <span v-else class="badge badge-error" :title="authHint">
+          ⚠ ต้องติดตั้ง SKP CM Extensions Hub
         </span>
       </div>
       <button @click="showSettings = true" class="p-2 hover:bg-gray-100 rounded-full transition" title="Settings">
@@ -92,9 +95,9 @@
       </button>
       <button 
         @click="showStockRequestModal = true" 
-        :disabled="!authToken || isLoading" 
+        :disabled="!canSendRequest || isLoading" 
         class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
-        :title="!authToken ? 'Please login first' : ''"
+        :title="authHint"
       >
         Send Stock Request
         <span v-if="isLoading" class="loader"></span>
@@ -106,57 +109,17 @@
       <div class="modal-content">
         <h3 class="text-xl font-bold mb-4">Settings</h3>
 
-        <!-- Authentication Section -->
+        <!-- Account (managed in SKP CM Extensions Hub) -->
         <div class="mb-6 pb-6 border-b">
-          <h4 class="font-semibold mb-3">Authentication</h4>
-
-          <div v-if="!authToken">
-            <div class="mb-3">
-              <label class="block font-semibold mb-2">Email/Username:</label>
-              <input 
-                type="email" 
-                v-model="credentials.username" 
-                class="border border-gray-400 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="user@example.com"
-              >
-            </div>
-            <div class="mb-3">
-              <label class="block font-semibold mb-2">Password:</label>
-              <input 
-                type="password" 
-                v-model="credentials.password" 
-                class="border border-gray-400 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="••••••••"
-              >
-            </div>
-            <div class="flex gap-2">
-              <button @click="saveAndLogin" :disabled="isLoggingIn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition flex-1 disabled:opacity-50">
-                {{ isLoggingIn ? 'Logging in...' : 'Save & Login' }}
-              </button>
-              <button @click="testLogin" :disabled="isLoggingIn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition disabled:opacity-50">
-                Test
-              </button>
-            </div>
-          </div>
-
-          <div v-else class="flex items-center justify-between">
-            <span class="badge badge-success">Logged in as {{ authUsername }}</span>
-            <button @click="logout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition">
-              Logout
-            </button>
-          </div>
+          <h4 class="font-semibold mb-3">บัญชี</h4>
+          <p class="mb-3 text-sm text-gray-600">{{ auth.logged_in ? ('Login อยู่: ' + auth.username) : authHint }}</p>
+          <button @click="openHubLogin" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition">
+            จัดการบัญชีใน Hub
+          </button>
         </div>
 
-        <!-- API Configuration -->
+        <!-- Report settings -->
         <div class="mb-4">
-          <h4 class="font-semibold mb-3">API Configuration</h4>
-          <label class="block font-semibold mb-2">Base URL:</label>
-          <input 
-            type="text" 
-            v-model="settings.apiBaseUrl" 
-            class="border border-gray-400 px-3 py-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
-            placeholder="https://api.example.com"
-          >
 
           <label class="block font-semibold mb-2">Expected Return Days:</label>
           <input 
